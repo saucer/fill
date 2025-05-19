@@ -33,5 +33,20 @@ function(fill_detect OUTPUT)
     list(APPEND ${OUTPUT} "functional")
   endif()
 
+  fill_check_cxx_compiles(
+    "#include <ranges>
+
+    int main()
+    {
+      std::views::join_with(' ');
+      return 0;
+    }"
+    has_join_with
+  )
+
+  if (NOT has_join_with)
+    list(APPEND ${OUTPUT} "join_with")
+  endif()
+
   return(PROPAGATE ${OUTPUT})
 endfunction()

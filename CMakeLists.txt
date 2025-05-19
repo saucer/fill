@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(saucer-fill LANGUAGES CXX VERSION 1.0.0)
+project(saucer-fill LANGUAGES CXX VERSION 1.1.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library switches
@@ -79,6 +79,19 @@ if ("functional" IN_LIST fill_replacements)
 
   target_link_libraries(${PROJECT_NAME} INTERFACE std23::nontype_functional)
   list(APPEND fill_headers "include/functional.hpp")
+endif()
+
+if ("join_with" IN_LIST fill_replacements)
+  message(STATUS "[fill] Using std::views::join_with replacement")
+
+  CPMFindPackage(
+    NAME           range-v3
+    GIT_TAG        0.12.0
+    GIT_REPOSITORY "https://github.com/ericniebler/range-v3"
+  )
+
+  target_link_libraries(${PROJECT_NAME} INTERFACE range-v3::range-v3)
+  list(APPEND fill_headers "include/views.hpp")
 endif()
 
 foreach (header IN LISTS fill_headers)
