@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(saucer-fill LANGUAGES CXX VERSION 1.1.1)
+project(saucer-fill LANGUAGES CXX VERSION 1.2.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library switches
@@ -34,7 +34,10 @@ target_compile_definitions(${PROJECT_NAME} INTERFACE FILL_NAMESPACE=${fill_names
 # Include directories
 # --------------------------------------------------------------------------------------------------------
 
-target_include_directories(${PROJECT_NAME} INTERFACE "include")
+target_include_directories(
+  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+                            $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+)
 
 # --------------------------------------------------------------------------------------------------------
 # Detect default replacements
@@ -99,3 +102,22 @@ foreach (header IN LISTS fill_headers)
     target_precompile_headers(${PROJECT_NAME} INTERFACE "${header}")
   endif()
 endforeach()
+
+# --------------------------------------------------------------------------------------------------------
+# Package Config
+# --------------------------------------------------------------------------------------------------------
+
+CPMFindPackage(
+  NAME           PackageProject
+  VERSION        1.13.0
+  GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake"
+)
+
+packageProject(
+  NAMESPACE saucer
+  NAME ${PROJECT_NAME}
+  VERSION ${PROJECT_VERSION}
+  BINARY_DIR ${PROJECT_BINARY_DIR}
+  INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include
+  INCLUDE_DESTINATION include/${PROJECT_NAME}-${PROJECT_VERSION}
+)
