@@ -4,5 +4,5 @@
 
 namespace FILL_NAMESPACE
 {
-    using std23::move_only_function;
+    using ::std23::move_only_function;
 } // namespace FILL_NAMESPACE
