@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(saucer-fill LANGUAGES CXX VERSION 1.2.0)
+project(saucer-fill LANGUAGES CXX VERSION 1.2.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library switches
@@ -57,6 +57,7 @@ endif()
 include("cmake/cpm.cmake")
 
 set(fill_headers "")
+set(fill_dependencies "")
 
 if ("jthread" IN_LIST fill_replacements)
   message(STATUS "[fill] Using std::jthread replacement")
@@ -68,6 +69,7 @@ if ("jthread" IN_LIST fill_replacements)
   )
 
   target_link_libraries(${PROJECT_NAME} INTERFACE nonstd::jthread)
+  
   list(APPEND fill_headers "include/jthread.hpp")
 endif()
 
@@ -81,6 +83,7 @@ if ("functional" IN_LIST fill_replacements)
   )
 
   target_link_libraries(${PROJECT_NAME} INTERFACE std23::nontype_functional)
+
   list(APPEND fill_headers "include/functional.hpp")
 endif()
 
@@ -94,7 +97,9 @@ if ("join_with" IN_LIST fill_replacements)
   )
 
   target_link_libraries(${PROJECT_NAME} INTERFACE range-v3::range-v3)
-  list(APPEND fill_headers "include/views.hpp")
+
+  list(APPEND fill_headers      "include/views.hpp")
+  list(APPEND fill_dependencies "range-v3 0.12.0")
 endif()
 
 foreach (header IN LISTS fill_headers)
@@ -106,6 +111,15 @@ endforeach()
 # --------------------------------------------------------------------------------------------------------
 # Package Config
 # --------------------------------------------------------------------------------------------------------
+
+set(fill_blacklist "nontype_functional" "jthread")
+
+foreach(target IN LISTS fill_blacklist)
+  if (TARGET ${target})
+    message(WARNING "[fill] Package-Config not supported with current replacements")
+    return()
+  endif()
+endforeach()
 
 CPMFindPackage(
   NAME           PackageProject
@@ -120,4 +134,5 @@ packageProject(
   BINARY_DIR ${PROJECT_BINARY_DIR}
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include
   INCLUDE_DESTINATION include/${PROJECT_NAME}-${PROJECT_VERSION}
+  DEPENDENCIES "${fill_dependencies}"
 )
