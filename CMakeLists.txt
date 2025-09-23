@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(saucer-fill LANGUAGES CXX VERSION 1.2.2)
+project(saucer-fill LANGUAGES CXX VERSION 1.3.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library switches
@@ -13,6 +13,14 @@ option(fill_silent "Whether or not to silently include polyfill headers" OFF)
 
 set(fill_namespace    "stdx"    CACHE STRING "The namespace in which to put the polyfills")
 set(fill_replacements "Default" CACHE STRING "The standard library features to replace")
+
+# --------------------------------------------------------------------------------------------------------
+# Convenience wrapper over `message`
+# --------------------------------------------------------------------------------------------------------
+
+function(fill_message LEVEL MESSAGE)
+  message(${LEVEL} "fill: ${MESSAGE}")
+endfunction()
 
 # --------------------------------------------------------------------------------------------------------
 # Create library
@@ -47,7 +55,10 @@ include("cmake/detect.cmake")
 
 if (fill_replacements STREQUAL "Default")
   fill_detect(fill_replacements)
-  message(STATUS "[fill] Recommended replacements: ${fill_replacements}")
+endif()
+
+if (fill_replacements)
+  fill_message(STATUS "Using replacements: ${fill_replacements}")
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -56,11 +67,11 @@ endif()
 
 include("cmake/cpm.cmake")
 
-set(fill_headers "")
-set(fill_dependencies "")
+set(fill_HEADERS "")
+set(fill_DEPENDENCIES "")
 
 if ("jthread" IN_LIST fill_replacements)
-  message(STATUS "[fill] Using std::jthread replacement")
+  fill_message(STATUS "Using std::jthread replacement")
 
   CPMFindPackage(
     NAME           jthread
@@ -68,13 +79,12 @@ if ("jthread" IN_LIST fill_replacements)
     GIT_REPOSITORY "https://github.com/saucer/jthread"
   )
 
+  list(APPEND fill_HEADERS "include/jthread.hpp")
   target_link_libraries(${PROJECT_NAME} INTERFACE nonstd::jthread)
-  
-  list(APPEND fill_headers "include/jthread.hpp")
 endif()
 
 if ("functional" IN_LIST fill_replacements)
-  message(STATUS "[fill] Using std::move_only_function replacement")
+  fill_message(STATUS "Using std::move_only_function replacement")
 
   CPMFindPackage(
     NAME           functional
@@ -82,13 +92,12 @@ if ("functional" IN_LIST fill_replacements)
     GIT_REPOSITORY "https://github.com/zhihaoy/nontype_functional"
   )
 
+  list(APPEND fill_HEADERS "include/functional.hpp")
   target_link_libraries(${PROJECT_NAME} INTERFACE std23::nontype_functional)
-
-  list(APPEND fill_headers "include/functional.hpp")
 endif()
 
 if ("join_with" IN_LIST fill_replacements)
-  message(STATUS "[fill] Using std::views::join_with replacement")
+  fill_message(STATUS "[fill] Using std::views::join_with replacement")
 
   CPMFindPackage(
     NAME           range-v3
@@ -96,27 +105,27 @@ if ("join_with" IN_LIST fill_replacements)
     GIT_REPOSITORY "https://github.com/ericniebler/range-v3"
   )
 
-  target_link_libraries(${PROJECT_NAME} INTERFACE range-v3::range-v3)
+  list(APPEND fill_HEADERS      "include/views.hpp")
+  list(APPEND fill_DEPENDENCIES "range-v3 0.12.0")
 
-  list(APPEND fill_headers      "include/views.hpp")
-  list(APPEND fill_dependencies "range-v3 0.12.0")
+  target_link_libraries(${PROJECT_NAME} INTERFACE range-v3::range-v3)
 endif()
 
-foreach (header IN LISTS fill_headers)
-  if (fill_silent)
+if (fill_silent)
+  foreach (header IN LISTS fill_HEADERS)
     target_precompile_headers(${PROJECT_NAME} INTERFACE "${header}")
-  endif()
-endforeach()
+  endforeach()
+endif()
 
 # --------------------------------------------------------------------------------------------------------
 # Package Config
 # --------------------------------------------------------------------------------------------------------
 
-set(fill_blacklist "nontype_functional" "jthread")
+set(fill_BLACKLIST "nontype_functional" "jthread" CACHE STRING "Libraries that do not offer package config support" FORCE)
 
-foreach(target IN LISTS fill_blacklist)
+foreach(target IN LISTS fill_BLACKLIST)
   if (TARGET ${target})
-    message(WARNING "[fill] Package-Config not supported with current replacements")
+    fill_message(WARNING "Package-Config not supported with current replacements (${target})")
     return()
   endif()
 endforeach()
@@ -134,5 +143,5 @@ packageProject(
   BINARY_DIR ${PROJECT_BINARY_DIR}
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include
   INCLUDE_DESTINATION include/${PROJECT_NAME}-${PROJECT_VERSION}
-  DEPENDENCIES "${fill_dependencies}"
+  DEPENDENCIES "${fill_DEPENDENCIES}"
 )
