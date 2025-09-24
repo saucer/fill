@@ -97,7 +97,7 @@ if ("functional" IN_LIST fill_replacements)
 endif()
 
 if ("join_with" IN_LIST fill_replacements)
-  fill_message(STATUS "[fill] Using std::views::join_with replacement")
+  fill_message(STATUS "Using std::views::join_with replacement")
 
   CPMFindPackage(
     NAME           range-v3
